@@ -12,7 +12,7 @@ module I18n
   RESERVED_KEYS = [:scope, :default, :separator, :resolve, :object, :fallback, :format, :cascade, :throw, :raise, :rescue_format]
   RESERVED_KEYS_PATTERN = /%\{(#{RESERVED_KEYS.join("|")})\}/
 
-  extend Module.new {
+  extend(Module.new {
     # Gets I18n configuration object.
     def config
       Thread.current[:i18n_config] ||= I18n::Config.new
@@ -163,6 +163,8 @@ module I18n
     end
     alias :t :translate
 
+    # Wrapper for <tt>translate</tt> that adds <tt>:raise => true</tt>. With
+    # this option, if no translation is found, it will raise <tt>I18n::MissingTranslationData</tt>
     def translate!(key, options={})
       translate(key, options.merge(:raise => true))
     end
@@ -329,5 +331,5 @@ module I18n
            "(an instance of which is set to I18n.exception_handler by default)."
       exception.is_a?(MissingTranslation) ? exception.message : raise(exception)
     end
-  }
+  })
 end
