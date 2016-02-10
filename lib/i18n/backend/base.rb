@@ -1,6 +1,6 @@
 require 'yaml'
 require 'i18n/core_ext/hash'
-require 'i18n/core_ext/kernel/surpress_warnings'
+require 'i18n/core_ext/kernel/suppress_warnings'
 
 module I18n
   module Backend
@@ -42,6 +42,10 @@ module I18n
         entry
       end
 
+      def exists?(locale, key)
+        lookup(locale, key) != nil
+      end
+
       # Acts the same as +strftime+, but uses a localized version of the
       # format string. Takes a key from the date/time formats translations as
       # a format argument (<em>e.g.</em>, <tt>:short</tt> in <tt>:'date.formats'</tt>).
@@ -56,13 +60,14 @@ module I18n
         end
 
         # format = resolve(locale, object, format, options)
-        format = format.to_s.gsub(/%[aAbBp]/) do |match|
+        format = format.to_s.gsub(/%[aAbBpP]/) do |match|
           case match
           when '%a' then I18n.t(:"date.abbr_day_names",                  :locale => locale, :format => format)[object.wday]
           when '%A' then I18n.t(:"date.day_names",                       :locale => locale, :format => format)[object.wday]
           when '%b' then I18n.t(:"date.abbr_month_names",                :locale => locale, :format => format)[object.mon]
           when '%B' then I18n.t(:"date.month_names",                     :locale => locale, :format => format)[object.mon]
-          when '%p' then I18n.t(:"time.#{object.hour < 12 ? :am : :pm}", :locale => locale, :format => format) if object.respond_to? :hour
+          when '%p' then I18n.t(:"time.#{object.hour < 12 ? :am : :pm}", :locale => locale, :format => format).upcase if object.respond_to? :hour
+          when '%P' then I18n.t(:"time.#{object.hour < 12 ? :am : :pm}", :locale => locale, :format => format).downcase if object.respond_to? :hour
           end
         end
 
@@ -76,7 +81,6 @@ module I18n
       end
 
       def reload!
-        @skip_syntax_deprecation = false
       end
 
       protected
@@ -159,7 +163,9 @@ module I18n
           type = File.extname(filename).tr('.', '').downcase
           raise UnknownFileType.new(type, filename) unless respond_to?(:"load_#{type}", true)
           data = send(:"load_#{type}", filename)
-          raise InvalidLocaleData.new(filename) unless data.is_a?(Hash)
+          unless data.is_a?(Hash)
+            raise InvalidLocaleData.new(filename, 'expects it to return a hash, but does not')
+          end
           data.each { |locale, d| store_translations(locale, d || {}) }
         end
 
@@ -174,10 +180,8 @@ module I18n
         def load_yml(filename)
           begin
             YAML.load_file(filename)
-          rescue TypeError
-            nil
-          rescue SyntaxError
-            nil
+          rescue TypeError, ScriptError, StandardError => e
+            raise InvalidLocaleData.new(filename, e.inspect)
           end
         end
     end
