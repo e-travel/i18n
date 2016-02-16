@@ -1,7 +1,22 @@
 rvm:
-  - 1.8.7
-  - 1.9.2
   - 1.9.3
-  - ree
+  - 2.0.0
+  - 2.1
+  - 2.2
   - rbx
   - jruby
+
+gemfile:
+  - Gemfile
+  - gemfiles/Gemfile.rails-3.2.x
+  - gemfiles/Gemfile.rails-4.0.x
+  - gemfiles/Gemfile.rails-4.1.x
+  - gemfiles/Gemfile.rails-4.2.x
+  - gemfiles/Gemfile.rails-master
+
+matrix:
+  allow_failures:
+    - rvm: 2.2
+    - rvm: rbx
+    - rvm: jruby
+  fast_finish: true
